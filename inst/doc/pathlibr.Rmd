@@ -1,0 +1,129 @@
+---
+title: "Getting Started"
+author: "Matthew Strasiotto"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+This document aims to provide an overview of the basic usage of the Path object.
+Before we start, we load the package.
+
+```{r}
+library(pathlibr)
+library(glue)
+```
+
+# Motivation
+
+The Path class aims to make navigating directories a little more convenient, 
+it provides convenient interfaces for common operations such as navigating up
+(To the parent directory), listing child directories, and joining paths.
+
+# Getting Started
+
+## Making a Path
+
+First lets initialize a new path object.
+
+```{r}
+root <- Path$new(system.file("", package = "pathlibr", mustWork = TRUE))
+```
+
+And lets view the new path
+
+```{r}
+root$show
+```
+So far so good, we were able to initialize a Path object at our package install
+root.
+
+Now how do we use it?
+
+## Navigating with your path
+
+Lets go down a level, and examine our example vignette data.
+
+
+Here, we use the `dir` binding, followed by `.`
+
+Think of `.` as in, how file-systems represent
+the current directory. 
+
+This is actually just a shortcut for `dir` or `ls`. 
+
+```{r}
+eg <- root$dir$example
+print(glue("using dir: {eg$show}"))
+
+eg <- root$.$example
+
+print(glue("using '.': {eg$show}"))
+```
+
+It's important to note that `path$.` is actually returning a named list
+of files in the directory, and that though these files might look like 
+strings when printed, they're actually new `Path` objects.
+
+Because of this, we're able to chain subsequent `$.` commands.
+
+Let's see that in action.
+
+```{r}
+file <- eg$.$path$.$to$.$file1.txt
+
+file
+```
+
+Great, so how do we navigate to `file1.txt`'s sibling, `file2.txt`?
+
+We could use the `path$parent` binding to return the `Path` object 
+corresponding to the directory `example/path/to/`, 
+
+as you may have guessed, we can use a shortcut alias, `path$..` to navigate up.
+
+```{r}
+file$parent
+
+file$..
+```
+
+Now that we're able to move upwards, we can access the sibling
+
+```{r}
+file2 <- file$..$.$file2.txt
+
+file2$show
+```
+
+I wonder what's inside these files? To find out, we should read them.
+
+It's important to notes that we should use this `$show` binding to return
+the path as a string when giving it to IO functions. 
+
+Inconvenient, I know (I'm going to work on that)
+
+```{r}
+directory <- file$..
+
+for (f in c("file1.txt", "file2.txt")){
+  print(glue("{f}:\n"))
+  
+  directory$.[[f]]$show %>% readLines() %>% cat()
+  
+  print(glue("\n"))
+}
+
+```
+
